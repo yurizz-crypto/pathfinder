@@ -36,7 +36,6 @@ public class HomeFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_home, container, false);
 
-        TextView tvWelcome = v.findViewById(R.id.tvHomeTitle);
         tvGreeting = v.findViewById(R.id.tvGreeting);
         Button btnStart = v.findViewById(R.id.btnStart);
         ImageButton btnLogout = v.findViewById(R.id.btnLogout);
@@ -50,33 +49,33 @@ public class HomeFragment extends Fragment {
         // Initialize DB and Prefs
         dbManager = new DBManager(getContext());
         dbManager.open();
-        SharedPreferences prefs = getActivity().getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
+        SharedPreferences prefs = requireActivity().getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
 
         // Set Greeting
         String email = prefs.getString("user_email", "");
         String username = dbManager.getUsername(email);
         tvGreeting.setText("Hello " + username + "!");
 
-        // Status Check Logic (Mock)
-        boolean hasFailed = false;
+        // Status Check (Mock)
+        boolean hasFailed = false; // You can make this dynamic later
         if (hasFailed) {
             tvStatusMsg.setText("Action Required: Review bridging programs.");
-            cvStatus.setCardBackgroundColor(getResources().getColor(android.R.color.holo_orange_light));
+            cvStatus.setCardBackgroundColor(requireContext().getColor(android.R.color.holo_orange_light));
         } else {
             tvStatusMsg.setText("Status: Ready to assess.");
+            cvStatus.setCardBackgroundColor(requireContext().getColor(R.color.brand_primary));
         }
 
         // Listeners
-        btnStart.setOnClickListener(view -> startActivity(new Intent(getActivity(), TestInputActivity.class)));
+        btnStart.setOnClickListener(view ->
+                startActivity(new Intent(getActivity(), TestInputActivity.class)));
 
         btnLogout.setOnClickListener(view -> {
-            // Clear session
             prefs.edit().clear().apply();
-            // Redirect to Login
             Intent intent = new Intent(getActivity(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
-            getActivity().finish();
+            requireActivity().finish();
         });
 
         return v;
@@ -89,7 +88,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadSavedResults() {
-        SharedPreferences prefs = getActivity().getSharedPreferences("user_results", Context.MODE_PRIVATE);
+        SharedPreferences prefs = requireActivity().getSharedPreferences("user_results", Context.MODE_PRIVATE);
         int count = prefs.getInt("rec_count", 0);
 
         if (count > 0) {
@@ -97,20 +96,31 @@ public class HomeFragment extends Fragment {
             List<RecommendationEngine.Recommendation> savedRecs = new ArrayList<>();
 
             for (int i = 0; i < count; i++) {
+                String program = prefs.getString("rec_prog_" + i, "");
+                int pct = prefs.getInt("rec_pct_" + i, 0);
+                String why = prefs.getString("rec_why_" + i, "");
+                String hist = prefs.getString("rec_hist_" + i, "");
+                String careers = prefs.getString("rec_car_" + i, "");
+
+                // New fields – provide defaults if not saved (backward compatibility)
+                String insight = prefs.getString("rec_insight_" + i, "Your unique strengths were analyzed in detail.");
+                String hardest = prefs.getString("rec_hardest_" + i, "Strong performance across the board.");
+                int quant = prefs.getInt("rec_quant_" + i, 70);
+                int verbal = prefs.getInt("rec_verbal_" + i, 70);
+                int logical = prefs.getInt("rec_logical_" + i, 70);
+
                 RecommendationEngine.Recommendation r = new RecommendationEngine.Recommendation(
-                        prefs.getString("rec_prog_" + i, ""),
-                        prefs.getInt("rec_pct_" + i, 0),
-                        prefs.getString("rec_why_" + i, ""),
-                        prefs.getString("rec_hist_" + i, ""),
-                        prefs.getString("rec_car_" + i, "")
+                        program, pct, why, hist, careers,
+                        insight, hardest,
+                        quant, verbal, logical
                 );
                 savedRecs.add(r);
             }
 
-            HomeRecAdapter adapter = new HomeRecAdapter(savedRecs);
-            rvRecs.setAdapter(adapter);
+            rvRecs.setAdapter(new HomeRecAdapter(savedRecs));
         } else {
             tvRecTitle.setVisibility(View.GONE);
+            rvRecs.setAdapter(null);
         }
     }
 
@@ -122,24 +132,29 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // Simplified Adapter for Home Screen
-    class HomeRecAdapter extends RecyclerView.Adapter<HomeRecAdapter.ViewHolder> {
-        List<RecommendationEngine.Recommendation> list;
-        public HomeRecAdapter(List<RecommendationEngine.Recommendation> l) { list = l; }
+    // Adapter for Home Screen Recommendations
+    private class HomeRecAdapter extends RecyclerView.Adapter<HomeRecAdapter.ViewHolder> {
+        private final List<RecommendationEngine.Recommendation> list;
+
+        public HomeRecAdapter(List<RecommendationEngine.Recommendation> l) {
+            this.list = l;
+        }
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_recommendation, parent, false);
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_recommendation, parent, false);
             return new ViewHolder(v);
         }
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             RecommendationEngine.Recommendation item = list.get(position);
+
             holder.tvProgram.setText(item.program);
             holder.tvPct.setText(item.matchPercent + "% Match");
             holder.pb.setProgress(item.matchPercent);
-            holder.tvExpl.setText("Tap to view details");
+            holder.tvExpl.setText("Tap for your full story");
 
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(getActivity(), WrappedDetailActivity.class);
@@ -149,12 +164,15 @@ public class HomeFragment extends Fragment {
         }
 
         @Override
-        public int getItemCount() { return list.size(); }
+        public int getItemCount() {
+            return list.size();
+        }
 
         class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvProgram, tvPct, tvExpl;
             android.widget.ProgressBar pb;
-            public ViewHolder(View v) {
+
+            ViewHolder(View v) {
                 super(v);
                 tvProgram = v.findViewById(R.id.tvProgram);
                 tvPct = v.findViewById(R.id.tvMatchPercent);

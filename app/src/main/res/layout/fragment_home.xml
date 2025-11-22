@@ -51,7 +51,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        app:cardBackgroundColor="@color/white"
+        app:cardBackgroundColor="@color/brand_primary"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp">
         <LinearLayout
@@ -59,8 +59,19 @@
             android:layout_height="wrap_content"
             android:padding="20dp"
             android:orientation="vertical">
-            <TextView android:text="Current Status" android:textColor="@color/brand_primary" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:id="@+id/tvStatusMsg" android:text="Ready to assess." android:textColor="@color/black_2" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <TextView
+                android:text="Current Status"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tvStatusMsg"
+                android:text="Ready to assess."
+                android:textColor="@color/white"
+                android:layout_marginTop="4dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 

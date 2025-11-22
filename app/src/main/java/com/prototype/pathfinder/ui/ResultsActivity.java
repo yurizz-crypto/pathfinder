@@ -93,17 +93,23 @@ public class ResultsActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("user_results", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
-        // Simple serialization: count|prog1|pct1|why1...
         int count = Math.min(list.size(), 3);
         editor.putInt("rec_count", count);
 
-        for(int i=0; i<count; i++) {
+        for (int i = 0; i < count; i++) {
             RecommendationEngine.Recommendation r = list.get(i);
             editor.putString("rec_prog_" + i, r.program);
             editor.putInt("rec_pct_" + i, r.matchPercent);
             editor.putString("rec_why_" + i, r.storyWhy);
             editor.putString("rec_hist_" + i, r.storyHistory);
             editor.putString("rec_car_" + i, r.storyCareers);
+
+            // === NEW: Save extra fields ===
+            editor.putString("rec_insight_" + i, r.itemInsight);
+            editor.putString("rec_hardest_" + i, r.hardestLogical);
+            editor.putInt("rec_quant_" + i, r.radarValues[0]);
+            editor.putInt("rec_verbal_" + i, r.radarValues[1]);
+            editor.putInt("rec_logical_" + i, r.radarValues[2]);
         }
         editor.apply();
     }
