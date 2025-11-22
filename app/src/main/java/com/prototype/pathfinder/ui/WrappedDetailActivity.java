@@ -8,25 +8,42 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import com.prototype.pathfinder.R;
-import com.prototype.pathfinder.ui.views.RadarChartView; // Make sure this matches your package
+import com.prototype.pathfinder.ui.views.RadarChartView;
 import com.prototype.pathfinder.utils.RecommendationEngine;
 
+/**
+ * WrappedDetailActivity
+ * <p>
+ * Displays a detailed, gamified breakdown of a specific academic recommendation.
+ * Inspired by "Spotify Wrapped," it uses a tap-to-advance story format.
+ * * Flow Steps:
+ * 0. Top Match Reveal
+ * 1. "Why This Fits" (Text explanation)
+ * 2. Aptitude Breakdown (Radar Chart visualization)
+ * 3. Specific Insight (e.g., "You crushed Question #17")
+ * 4. Historical Data Success
+ * 5. Future Career Outlook
+ */
 public class WrappedDetailActivity extends AppCompatActivity {
 
     private RecommendationEngine.Recommendation data;
-    private int currentStep = 0;
+    private int currentStep = 0; // Tracks the current story slide (0-5)
+
+    // UI Components
     private TextView tvTitle, tvMainText, tvSubText;
     private ConstraintLayout rootLayout;
-    private ProgressBar[] progressBars = new ProgressBar[6];
-    private RadarChartView radarChart;
+    private ProgressBar[] progressBars = new ProgressBar[6]; // Top progress indicators
+    private RadarChartView radarChart; // Custom view for skill visualization
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_wrapped_detail);
 
+        // Retrieve the Data Object
         data = (RecommendationEngine.Recommendation) getIntent().getSerializableExtra("rec_data");
 
+        // Bind Views
         rootLayout = findViewById(R.id.rootLayout);
         tvTitle = findViewById(R.id.tvStoryTitle);
         tvMainText = findViewById(R.id.tvStoryMain);
@@ -40,73 +57,83 @@ public class WrappedDetailActivity extends AppCompatActivity {
         progressBars[4] = findViewById(R.id.progress5);
         progressBars[5] = findViewById(R.id.progress6);
 
-        // FIXED: was "dosis" → now correct
+        // Tap Listener for Navigation
         rootLayout.setOnClickListener(v -> {
             if (currentStep < 5) {
                 currentStep++;
                 updateUI();
             } else {
+                // End of story, close activity with slide-down animation
                 finish();
                 overridePendingTransition(0, R.anim.slide_out_down);
             }
         });
 
+        // Initial Load
         updateUI();
     }
 
+    /**
+     * Updates the UI elements based on the `currentStep`.
+     * Changes background colors, text content, and visibility of complex views (RadarChart).
+     */
     private void updateUI() {
+        // Reset specific views
         radarChart.setVisibility(View.GONE);
         tvSubText.setVisibility(View.VISIBLE);
 
+        // Update Top Progress Bars (Segments)
         for (int i = 0; i < 6; i++) {
             progressBars[i].setProgress(i <= currentStep ? 100 : 0);
         }
 
+        // State Machine for Story Content
         switch (currentStep) {
-            case 0: // Reveal
-                rootLayout.setBackgroundColor(Color.parseColor("#1DB954"));
+            case 0: // REVEAL
+                rootLayout.setBackgroundColor(Color.parseColor("#1DB954")); // Brand Green
                 tvTitle.setText("YOUR TOP MATCH");
                 tvMainText.setText(data.program);
                 tvMainText.setTextSize(48);
                 tvSubText.setText(data.matchPercent + "% Match");
                 break;
 
-            case 1: // Why this program fits
-                rootLayout.setBackgroundColor(Color.parseColor("#536DFE"));
+            case 1: // WHY IT FITS
+                rootLayout.setBackgroundColor(Color.parseColor("#536DFE")); // Indigo
                 tvTitle.setText("WHY THIS FITS");
                 tvMainText.setText("Your Aptitude Profile");
                 tvMainText.setTextSize(32);
                 tvSubText.setText(data.storyWhy);
                 break;
 
-            case 2: // Radar Chart
-                rootLayout.setBackgroundColor(Color.parseColor("#121212"));
+            case 2: // RADAR CHART (VISUALIZATION)
+                rootLayout.setBackgroundColor(Color.parseColor("#121212")); // Dark Mode
                 tvTitle.setText("YOUR SCORE BREAKDOWN");
                 tvMainText.setText("Quantitative • Verbal • Logical");
                 tvMainText.setTextSize(28);
-                tvSubText.setVisibility(View.GONE);
+                tvSubText.setVisibility(View.GONE); // Hide subtext to make room for chart
                 radarChart.setVisibility(View.VISIBLE);
+                // Set data for custom drawing
                 radarChart.setValues(data.radarValues[0], data.radarValues[1], data.radarValues[2]);
                 break;
 
-            case 3: // Legendary Question #17
-                rootLayout.setBackgroundColor(Color.parseColor("#8E24AA"));
+            case 3: // INSIGHT / HARDEST QUESTION
+                rootLayout.setBackgroundColor(Color.parseColor("#8E24AA")); // Purple
                 tvTitle.setText("YOU CRUSHED THE HARDEST ONE");
                 tvMainText.setText("Legendary Question #17");
                 tvMainText.setTextSize(32);
                 tvSubText.setText(data.itemInsight);
                 break;
 
-            case 4: // Success Metrics
-                rootLayout.setBackgroundColor(Color.parseColor("#E91E63"));
+            case 4: // HISTORICAL DATA
+                rootLayout.setBackgroundColor(Color.parseColor("#E91E63")); // Pink
                 tvTitle.setText("THE DATA SAYS");
                 tvMainText.setText("Historical Success");
                 tvMainText.setTextSize(32);
                 tvSubText.setText(data.storyHistory);
                 break;
 
-            case 5: // Future Careers
-                rootLayout.setBackgroundColor(Color.parseColor("#FF9800"));
+            case 5: // CAREERS
+                rootLayout.setBackgroundColor(Color.parseColor("#FF9800")); // Orange
                 tvTitle.setText("YOUR FUTURE");
                 tvMainText.setText("Careers Await");
                 tvMainText.setTextSize(32);
@@ -114,7 +141,7 @@ public class WrappedDetailActivity extends AppCompatActivity {
                 break;
         }
 
-        // Fade-in animation
+        // Apply Text Fade-in Animation for smooth transitions
         tvMainText.setAlpha(0f);
         tvMainText.animate().alpha(1f).setDuration(500).start();
         if (tvSubText.getVisibility() == View.VISIBLE) {

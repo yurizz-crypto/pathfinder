@@ -9,6 +9,15 @@ import com.prototype.pathfinder.ui.fragments.HomeFragment;
 import com.prototype.pathfinder.ui.fragments.MapFragment;
 import com.prototype.pathfinder.ui.fragments.ScheduleFragment;
 
+/**
+ * DashboardActivity
+ * <p>
+ * The primary container for the application's main screens.
+ * It hosts the BottomNavigationView and manages the transactions between:
+ * 1. HomeFragment (Dashboard)
+ * 2. ScheduleFragment (Class Schedule)
+ * 3. MapFragment (Campus Map)
+ */
 public class DashboardActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNav;
@@ -20,13 +29,14 @@ public class DashboardActivity extends AppCompatActivity {
 
         bottomNav = findViewById(R.id.bottom_nav);
 
-        // Load Default Fragment
+        // Load Default Fragment (Home) only if not restoring from a previous state
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
         }
 
+        // Navigation Item Listener
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int id = item.getItemId();
@@ -48,15 +58,23 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    // Public method to allow Fragments to switch tabs (e.g., Schedule -> Map)
+    /**
+     * Public method to allow Fragments (specifically ScheduleFragment) to programmatically
+     * switch the active tab to the Map and pass a specific location to focus on.
+     *
+     * @param roomName The name of the room to highlight on the map.
+     */
     public void switchToMap(String roomName) {
+        // 1. Update the Bottom Navigation UI state
         bottomNav.setSelectedItemId(R.id.nav_map);
 
+        // 2. Create MapFragment with arguments
         MapFragment mapFrag = new MapFragment();
         Bundle args = new Bundle();
         args.putString("target_room", roomName);
         mapFrag.setArguments(args);
 
+        // 3. Execute Transaction
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, mapFrag)
                 .commit();

@@ -24,28 +24,41 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.prototype.pathfinder.R;
 import com.prototype.pathfinder.data.DBManager;
 
+/**
+ * MapFragment
+ * <p>
+ * Displays an interactive Google Map.
+ * Capabilities:
+ * 1. Plots campus locations stored in the local SQLite database.
+ * 2. Uses FusedLocationProviderClient to get the user's real-time location.
+ * 3. Draws a navigation line (Polyline) if a specific target room is passed via arguments.
+ */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private String targetRoom;
+    private String targetRoom; // The room name passed from ScheduleFragment (optional)
     private DBManager dbManager;
     private FusedLocationProviderClient fusedLocationClient;
 
-    // CMU Center Coordinates (Admin Building Approx)
+    // CMU Center Coordinates (Admin Building Approx) - Default fallback location
     private static final LatLng CMU_CENTER = new LatLng(7.864722, 125.050833);
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_map, container, false);
 
+        // Retrieve arguments (if navigating from Schedule)
         if (getArguments() != null) {
             targetRoom = getArguments().getString("target_room");
         }
 
         dbManager = new DBManager(getContext());
         dbManager.open();
+
+        // Initialize Location Services
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
 
+        // Initialize Map Fragment asynchronously
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         if (mapFragment != null) {
             mapFragment.getMapAsync(this);
@@ -53,19 +66,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         return v;
     }
 
+    /**
+     * Triggered when the Google Map is ready for interaction.
+     * Handles logic for markers, permissions, and camera movement.
+     *
+     * @param googleMap The instance of the map.
+     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.getUiSettings().setZoomControlsEnabled(true);
 
-        // 1. Add Destination Markers
+        // 1. Plot All Campus Locations from Database
         LatLng destLatLng = null;
         for (String room : dbManager.getAllRoomNames()) {
             DBManager.LocationItem loc = dbManager.getLocation(room);
             if (loc != null) {
                 LatLng pos = new LatLng(loc.lat, loc.lng);
 
-                // Highlight target room if selected
+                // Highlight target room with a RED marker, others with AZURE
                 if (targetRoom != null && targetRoom.equals(loc.name)) {
                     mMap.addMarker(new MarkerOptions()
                             .position(pos)
@@ -83,37 +102,39 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         }
 
-        // 2. Handle User Location & Camera
+        // 2. Handle User Location & Camera Positioning
         if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            mMap.setMyLocationEnabled(true);
+            mMap.setMyLocationEnabled(true); // Shows the blue dot
 
             if (destLatLng != null) {
-                // If navigating to a specific room
+                // Scenario A: Navigating to a specific room
                 LatLng finalDest = destLatLng;
                 fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
                     if (location != null) {
                         LatLng userLatLng = new LatLng(location.getLatitude(), location.getLongitude());
 
-                        // Draw Path line
+                        // Draw simple straight line (geodesic) path from User -> Destination
                         mMap.addPolyline(new PolylineOptions()
                                 .add(userLatLng, finalDest)
                                 .width(12)
                                 .color(Color.BLUE)
                                 .geodesic(true));
 
+                        // Center camera on user to start navigation
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userLatLng, 16));
                     } else {
-                        // Fallback if gps not ready
+                        // Fallback: GPS signal not found, just show destination
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(finalDest, 17));
                     }
                 });
             } else {
-                // Default View: Center on CMU
+                // Scenario B: Just exploring map (Center on default Campus location)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CMU_CENTER, 16));
             }
         } else {
-            // No Permissions: Just show CMU map
+            // Permission Denied: Just show CMU map without user location
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CMU_CENTER, 16));
+            // Request permission (Request code 1001)
             ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1001);
         }
     }

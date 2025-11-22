@@ -19,8 +19,21 @@ import com.prototype.pathfinder.data.DBManager;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * SurveyActivity
+ * <p>
+ * Conducts a psychometric interest survey using a 5-point Likert Scale.
+ * Logic:
+ * 1. Displays questions one by one with a progress bar.
+ * 2. Maps specific questions to interest categories (Quant, Verbal, Logical, Creative).
+ * 3. Aggregates and averages responses to calculate an "Interest Score" per category.
+ * 4. Bundles these results and passes them to the ResultsActivity.
+ */
 public class SurveyActivity extends AppCompatActivity {
+    // Stores user answers: Key = Question Index, Value = Rating (1-5)
     private Map<Integer, Integer> userResponses = new HashMap<>();
+
+    // Survey Questions
     private final String[] questions = {
             "I enjoy solving complex mathematical problems.",
             "I like writing essays or storytelling.",
@@ -34,6 +47,7 @@ public class SurveyActivity extends AppCompatActivity {
             "I am curious about scientific theories and experiments."
     };
 
+    // Maps Question Index to Interest Category
     private final String[] categoryMap = {
             "quant_interest", "verbal_interest", "logical_interest", "logical_interest",
             "verbal_interest", "quant_interest", "logical_interest", "creative_interest",
@@ -52,6 +66,7 @@ public class SurveyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_survey);
 
+        // Bind Views
         llQuestions = findViewById(R.id.llQuestions);
         pbProgress = findViewById(R.id.pbProgress);
         tvProgressText = findViewById(R.id.tvProgressText);
@@ -66,31 +81,39 @@ public class SurveyActivity extends AppCompatActivity {
         setupButtons();
     }
 
+    /**
+     * Dynamically generates the UI for the specific question index.
+     * Uses a CardView containing the Question Text and a RadioGroup for options.
+     *
+     * @param index The index of the question to display.
+     */
     private void showQuestion(int index) {
         llQuestions.removeAllViews();
         currentQuestion = index;
 
+        // Update Progress
         pbProgress.setMax(questions.length);
         pbProgress.setProgress(index + 1);
         tvProgressText.setText(String.format("Question %d of %d", index + 1, questions.length));
 
+        // Create Card Container
         CardView card = new CardView(this);
         card.setRadius(16);
         card.setCardElevation(4);
-        // UPDATED: Set Card background to Brand Primary (Green)
-        card.setCardBackgroundColor(getColor(R.color.brand_primary));
+        card.setCardBackgroundColor(getColor(R.color.brand_primary)); // Brand Color Background
 
         LinearLayout cardLayout = new LinearLayout(this);
         cardLayout.setOrientation(LinearLayout.VERTICAL);
         cardLayout.setPadding(32, 32, 32, 32);
 
+        // Add Question Text
         TextView tvQuestion = new TextView(this);
         tvQuestion.setText(questions[index]);
         tvQuestion.setTextSize(20);
-        // UPDATED: Set Question Text to White
         tvQuestion.setTextColor(Color.WHITE);
         cardLayout.addView(tvQuestion);
 
+        // Create Radio Options (Likert Scale)
         RadioGroup rgScale = new RadioGroup(this);
         rgScale.setOrientation(RadioGroup.VERTICAL);
         rgScale.setPadding(0, 24, 0, 0);
@@ -99,19 +122,20 @@ public class SurveyActivity extends AppCompatActivity {
         for (int i = 1; i <= 5; i++) {
             RadioButton rb = new RadioButton(this);
             rb.setText(options[i - 1]);
-            rb.setId(i);
+            rb.setId(i); // ID matches the score value (1-5)
             rb.setTextSize(16);
             rb.setPadding(16, 16, 16, 16);
-            // UPDATED: Set RadioButton Text to White and Tint to Yellow
             rb.setTextColor(Color.WHITE);
             rb.setButtonTintList(ColorStateList.valueOf(getColor(R.color.brand_secondary)));
             rgScale.addView(rb);
         }
 
+        // Restore previous selection if navigating back
         if (userResponses.containsKey(index)) {
             rgScale.check(userResponses.get(index));
         }
 
+        // Save selection on change
         rgScale.setOnCheckedChangeListener((group, checkedId) -> {
             userResponses.put(index, checkedId);
         });
@@ -120,9 +144,11 @@ public class SurveyActivity extends AppCompatActivity {
         card.addView(cardLayout);
         llQuestions.addView(card);
 
+        // Simple Fade-in Animation
         card.setAlpha(0f);
         card.animate().alpha(1f).setDuration(300).start();
 
+        // Manage Navigation Button Visibility
         btnPrev.setVisibility(index == 0 ? View.GONE : View.VISIBLE);
         if (index == questions.length - 1) {
             btnNext.setVisibility(View.GONE);
@@ -157,23 +183,32 @@ public class SurveyActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Aggregates the survey data.
+     * Calculates the average score for each category (Quant, Verbal, etc.) based on user responses.
+     * Packages the data into a Bundle and starts the ResultsActivity.
+     */
     private void processAndFinish() {
         Map<String, Integer> sumScores = new HashMap<>();
         Map<String, Integer> countScores = new HashMap<>();
 
+        // 1. Sum up scores per category
         for (int i = 0; i < questions.length; i++) {
             String category = categoryMap[i];
-            int score = userResponses.getOrDefault(i, 3);
+            int score = userResponses.getOrDefault(i, 3); // Default to Neutral if error
             sumScores.put(category, sumScores.getOrDefault(category, 0) + score);
             countScores.put(category, countScores.getOrDefault(category, 0) + 1);
         }
 
+        // 2. Calculate Averages
         Map<String, Integer> finalScores = new HashMap<>();
         for (String key : sumScores.keySet()) {
             double avg = sumScores.get(key) / (double) countScores.get(key);
+            // Result is a 1-5 scale integer for each interest category
             finalScores.put(key, (int) Math.round(avg));
         }
 
+        // 3. Pass Data to Results Engine
         Intent intent = new Intent(this, ResultsActivity.class);
         intent.putExtra("test_id", getIntent().getStringExtra("test_id"));
         Bundle bundle = new Bundle();

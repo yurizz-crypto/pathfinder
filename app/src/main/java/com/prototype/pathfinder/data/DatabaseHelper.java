@@ -5,11 +5,24 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 
+/**
+ * DatabaseHelper
+ * <p>
+ * This class manages the database creation and version management.
+ * It defines the table schemas (Contracts) and handles the initial
+ * population of data for Tests, Programs, and Locations.
+ */
 public class DatabaseHelper extends SQLiteOpenHelper {
+    // Database Info
     private static final String DATABASE_NAME = "pathfinder_v2.db";
-    private static final int DATABASE_VERSION = 3; // Incremented Version to force upgrade
+    private static final int DATABASE_VERSION = 3; // Incremented Version to force upgrade path
 
-    // --- EXISTING TABLES ---
+    // --- EXISTING TABLES CONTRACTS ---
+
+    /**
+     * Schema definition for the User table.
+     * Stores authentication details.
+     */
     public static abstract class Users implements BaseColumns {
         public static final String TABLE_NAME = "users";
         public static final String COLUMN_NAME_USERNAME = "username";
@@ -17,24 +30,38 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         public static final String COLUMN_NAME_PASSWORD = "hashed_password";
     }
 
+    /**
+     * Schema definition for Test Scores.
+     * Stores raw scores for aptitude categories.
+     */
     public static abstract class TestScores implements BaseColumns {
         public static final String TABLE_NAME = "test_scores";
-        public static final String COLUMN_NAME_TEST_ID = "test_id";
+        public static final String COLUMN_NAME_TEST_ID = "test_id"; // e.g., TEST001
         public static final String COLUMN_NAME_QUANT = "quantitative";
         public static final String COLUMN_NAME_VERBAL = "verbal";
         public static final String COLUMN_NAME_LOGICAL = "logical";
     }
 
+    /**
+     * Schema definition for Academic Programs.
+     * Contains program details and weighting requirements for recommendation logic.
+     */
     public static abstract class Programs implements BaseColumns {
         public static final String TABLE_NAME = "programs";
         public static final String COLUMN_NAME_NAME = "name";
         public static final String COLUMN_NAME_DESC = "description";
+        // Weighting factors (0.0 - 1.0) representing importance of each skill for this program
         public static final String COLUMN_NAME_REQ_QUANT = "req_quant_weight";
         public static final String COLUMN_NAME_REQ_VERBAL = "req_verbal_weight";
         public static final String COLUMN_NAME_REQ_LOGICAL = "req_logical_weight";
     }
 
     // --- LOCATIONS TABLE (Updated for CMU) ---
+
+    /**
+     * Schema definition for Campus Locations.
+     * Stores geospatial data for the map features.
+     */
     public static abstract class Locations implements BaseColumns {
         public static final String TABLE_NAME = "locations";
         public static final String COL_NAME = "room_name";
@@ -44,16 +71,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // --- SCHEDULE TABLE ---
+
+    /**
+     * Schema definition for User Schedules.
+     * Links specific subjects and times to a user email.
+     */
     public static abstract class Schedules implements BaseColumns {
         public static final String TABLE_NAME = "schedules";
-        public static final String COL_EMAIL = "user_email";
+        public static final String COL_EMAIL = "user_email"; // Foreign key-like reference to Users
         public static final String COL_SUBJECT = "subject_code";
         public static final String COL_ROOM = "room_name";
         public static final String COL_DAY = "day_of_week";
         public static final String COL_TIME = "time_slot";
     }
 
-    // SQL Create Statements
+    // --- SQL CREATE STATEMENTS ---
+
     private static final String SQL_CREATE_USERS = "CREATE TABLE " + Users.TABLE_NAME + " (" +
             Users._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
             Users.COLUMN_NAME_USERNAME + " TEXT UNIQUE NOT NULL, " +
@@ -89,10 +122,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             Schedules.COL_DAY + " TEXT, " +
             Schedules.COL_TIME + " TEXT);";
 
+    /**
+     * Constructor
+     * @param context Application context
+     */
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
+    /**
+     * Called when the database is created for the first time.
+     * Creates tables and populates initial seed data.
+     * @param db The database.
+     */
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_USERS);
@@ -104,6 +146,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         populateInitialData(db);
     }
 
+    /**
+     * Helper method to insert static data into the database upon creation.
+     * Includes:
+     * 1. Mock Test Scores (Test IDs)
+     * 2. Academic Programs with logic weights
+     * 3. Real-world locations for Central Mindanao University (CMU)
+     *
+     * @param db The writeable database instance.
+     */
     private void populateInitialData(SQLiteDatabase db) {
         // Test Scores
         db.execSQL("INSERT INTO " + TestScores.TABLE_NAME + " VALUES ('TEST001', 85, 70, 80);");
@@ -142,6 +193,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO " + Locations.TABLE_NAME + " VALUES (null, 'Main Library', 7.8650, 125.0510, 'University Library');");
     }
 
+    /**
+     * Called when the database version increases.
+     * Currently uses a destructive strategy (DROP ALL and RECREATE).
+     *
+     * @param db The database.
+     * @param oldVersion The old version number.
+     * @param newVersion The new version number.
+     */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + Users.TABLE_NAME);
