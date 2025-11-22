@@ -7,6 +7,9 @@ import android.database.sqlite.SQLiteDatabase;
 import com.prototype.pathfinder.data.DatabaseHelper.Programs;
 import com.prototype.pathfinder.data.DatabaseHelper.TestScores;
 import com.prototype.pathfinder.data.DatabaseHelper.Users;
+import com.prototype.pathfinder.data.DatabaseHelper.Locations;
+import com.prototype.pathfinder.data.DatabaseHelper.Schedules;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -30,7 +33,7 @@ public class DBManager {
         if (db != null) db.close();
     }
 
-    // User methods
+    // --- User Methods ---
     public boolean registerUser(String username, String email, String password) {
         try {
             String hashedPw = hashPassword(password);
@@ -55,6 +58,18 @@ public class DBManager {
         return valid;
     }
 
+    // NEW: Get Username by Email for the Home Screen
+    public String getUsername(String email) {
+        Cursor cursor = db.query(Users.TABLE_NAME, new String[]{Users.COLUMN_NAME_USERNAME},
+                Users.COLUMN_NAME_EMAIL + "=?", new String[]{email}, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            String username = cursor.getString(0);
+            cursor.close();
+            return username;
+        }
+        return "Student"; // Default fallback
+    }
+
     private String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -63,11 +78,11 @@ public class DBManager {
             for (byte b : hashedBytes) sb.append(String.format("%02x", b));
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
-            return password; // Fallback (not ideal)
+            return password;
         }
     }
 
-    // TestScores
+    // --- TestScores Methods ---
     public Map<String, Integer> getScoresById(String testId) {
         Map<String, Integer> scores = new HashMap<>();
         Cursor cursor = db.query(TestScores.TABLE_NAME, null,
@@ -82,7 +97,7 @@ public class DBManager {
         return scores;
     }
 
-    // Programs
+    // --- Programs Methods ---
     public List<Program> getAllPrograms() {
         List<Program> programs = new ArrayList<>();
         Cursor cursor = db.query(Programs.TABLE_NAME, null, null, null, null, null, null);
@@ -100,11 +115,81 @@ public class DBManager {
         return programs;
     }
 
+    // --- Schedule Methods ---
+    public void addSchedule(String email, String subject, String room, String day, String time) {
+        ContentValues values = new ContentValues();
+        values.put(Schedules.COL_EMAIL, email);
+        values.put(Schedules.COL_SUBJECT, subject);
+        values.put(Schedules.COL_ROOM, room);
+        values.put(Schedules.COL_DAY, day);
+        values.put(Schedules.COL_TIME, time);
+        db.insert(Schedules.TABLE_NAME, null, values);
+    }
+
+    public List<ScheduleItem> getUserSchedule(String email) {
+        List<ScheduleItem> list = new ArrayList<>();
+        Cursor cursor = db.query(Schedules.TABLE_NAME, null,
+                Schedules.COL_EMAIL + "=?", new String[]{email}, null, null, null);
+
+        while (cursor.moveToNext()) {
+            list.add(new ScheduleItem(
+                    cursor.getString(cursor.getColumnIndex(Schedules.COL_SUBJECT)),
+                    cursor.getString(cursor.getColumnIndex(Schedules.COL_ROOM)),
+                    cursor.getString(cursor.getColumnIndex(Schedules.COL_DAY)),
+                    cursor.getString(cursor.getColumnIndex(Schedules.COL_TIME))
+            ));
+        }
+        cursor.close();
+        return list;
+    }
+
+    // --- Location Methods ---
+    public List<String> getAllRoomNames() {
+        List<String> list = new ArrayList<>();
+        Cursor cursor = db.query(Locations.TABLE_NAME, new String[]{Locations.COL_NAME}, null, null, null, null, null);
+        while(cursor.moveToNext()){
+            list.add(cursor.getString(0));
+        }
+        cursor.close();
+        return list;
+    }
+
+    public LocationItem getLocation(String roomName) {
+        Cursor cursor = db.query(Locations.TABLE_NAME, null, Locations.COL_NAME + "=?", new String[]{roomName}, null, null, null);
+        LocationItem loc = null;
+        if (cursor.moveToFirst()) {
+            loc = new LocationItem(
+                    cursor.getString(cursor.getColumnIndex(Locations.COL_NAME)),
+                    cursor.getDouble(cursor.getColumnIndex(Locations.COL_LAT)),
+                    cursor.getDouble(cursor.getColumnIndex(Locations.COL_LNG)),
+                    cursor.getString(cursor.getColumnIndex(Locations.COL_DESC))
+            );
+        }
+        cursor.close();
+        return loc;
+    }
+
+    // --- Data Classes ---
     public static class Program {
         public String name, desc;
         public double reqQuant, reqVerbal, reqLogical;
         public Program(String n, String d, double q, double v, double l) {
             name = n; desc = d; reqQuant = q; reqVerbal = v; reqLogical = l;
+        }
+    }
+
+    public static class ScheduleItem {
+        public String subject, room, day, time;
+        public ScheduleItem(String s, String r, String d, String t) {
+            subject = s; room = r; day = d; time = t;
+        }
+    }
+
+    public static class LocationItem {
+        public String name, desc;
+        public double lat, lng;
+        public LocationItem(String n, double la, double lo, String d) {
+            name = n; lat = la; lng = lo; desc = d;
         }
     }
 }

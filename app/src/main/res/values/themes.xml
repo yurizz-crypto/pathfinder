@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.Pathfinder" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorOnPrimary">@color/white</item>
 
@@ -10,5 +10,5 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
-    <style name="Theme.Pathfinder" parent="Base.Theme.Pathfinder" />
+    <style name="AppTheme" parent="Theme.Pathfinder" />
 </resources>

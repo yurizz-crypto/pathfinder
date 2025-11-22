@@ -2,88 +2,25 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/gradient_bg"
-    android:padding="32dp">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottom_nav" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.4">
-
-        <TextView
-            android:id="@+id/tvWelcome"
-            android:text="Welcome!"
-            android:fontFamily="@font/poppins"
-            android:textStyle="bold"
-            android:textSize="32sp"
-            android:textColor="@android:color/white"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center" />
-
-        <TextView
-            android:text="Ready to discover your ideal career path?"
-            android:fontFamily="@font/poppins"
-            android:textSize="16sp"
-            android:textColor="#E6FFFFFF"
-            android:layout_marginTop="8dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="48dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@android:color/white">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp"
-                android:gravity="center">
-
-                <TextView
-                    android:text="Start Assessment"
-                    android:fontFamily="@font/poppins"
-                    android:textStyle="bold"
-                    android:textSize="20sp"
-                    android:textColor="#084924"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
-                <TextView
-                    android:text="Takes about 5 minutes"
-                    android:fontFamily="@font/poppins"
-                    android:textSize="14sp"
-                    android:textColor="#EB5757"
-                    android:layout_marginTop="4dp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
-                <Button
-                    android:id="@+id/btnStartPathfinder"
-                    android:text="Begin Journey"
-                    android:fontFamily="@font/poppins"
-                    android:layout_width="match_parent"
-                    android:layout_height="60dp"
-                    android:layout_marginTop="24dp"
-                    app:cornerRadius="12dp"
-                    android:textAllCaps="false"
-                    android:textSize="16sp"
-                    android:backgroundTint="#084924"
-                    android:textColor="@android:color/white" />
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-    </LinearLayout>
+        android:background="@color/white"
+        app:elevation="8dp"
+        app:menu="@menu/bottom_nav_menu"
+        app:itemIconTint="@color/nav_item_color"
+        app:itemTextColor="@color/nav_item_color"
+        app:labelVisibilityMode="labeled"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

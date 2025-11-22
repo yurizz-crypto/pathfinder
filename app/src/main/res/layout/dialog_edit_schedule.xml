@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/rounded_badge"
+    android:backgroundTint="@color/white">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Correct Room:"
+        android:textSize="18sp"
+        android:fontFamily="@font/poppins"
+        android:textColor="@color/brand_primary"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <Spinner
+        android:id="@+id/spinnerRooms"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:background="@drawable/rounded_badge"
+        android:backgroundTint="#F0F0F0"/>
+</LinearLayout>
