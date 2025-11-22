@@ -10,14 +10,18 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.airbnb.lottie.LottieAnimationView;
 import com.prototype.pathfinder.R;
 import com.prototype.pathfinder.data.DBManager;
 import com.prototype.pathfinder.utils.RecommendationEngine;
+
 import java.util.List;
 import java.util.Map;
 
@@ -89,10 +93,31 @@ public class ResultsActivity extends AppCompatActivity {
             rvRecs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
             rvRecs.setAdapter(new RecAdapter(recs));
 
-        }, 2000); // 2 second delay for "Reveal" effect
+        }, 5000); // 5 second delay for "Reveal" effect
 
-        // Listener for Share Button (Placeholder)
-        btnShare.setOnClickListener(v -> { /* Share Intent Logic */ });
+        btnShare.setOnClickListener(v -> {
+            if (recs != null && !recs.isEmpty()) {
+                // Get the top result
+                RecommendationEngine.Recommendation topResult = recs.get(0);
+
+                // Create a message string
+                String shareBody = "I just took the Pathfinder Assessment!\n\n" +
+                        "My Top Match: " + topResult.program + "\n" +
+                        "Match Strength: " + topResult.matchPercent + "%\n\n" +
+                        "Find your path today!";
+
+                // Create the Share Intent
+                Intent sharingIntent = new Intent(Intent.ACTION_SEND);
+                sharingIntent.setType("text/plain");
+                sharingIntent.putExtra(Intent.EXTRA_SUBJECT, "My Pathfinder Result");
+                sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
+
+                // Launch the chooser
+                startActivity(Intent.createChooser(sharingIntent, "Share result via"));
+            } else {
+                Toast.makeText(this, "No results to share yet.", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         // Listener for Home Button - Clears stack and returns to Dashboard
         btnHome.setOnClickListener(v -> {
