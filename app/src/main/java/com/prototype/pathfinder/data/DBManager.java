@@ -58,7 +58,6 @@ public class DBManager {
         return valid;
     }
 
-    // NEW: Get Username by Email for the Home Screen
     public String getUsername(String email) {
         Cursor cursor = db.query(Users.TABLE_NAME, new String[]{Users.COLUMN_NAME_USERNAME},
                 Users.COLUMN_NAME_EMAIL + "=?", new String[]{email}, null, null, null);
@@ -67,7 +66,7 @@ public class DBManager {
             cursor.close();
             return username;
         }
-        return "Student"; // Default fallback
+        return "Student";
     }
 
     private String hashPassword(String password) {
@@ -126,13 +125,19 @@ public class DBManager {
         db.insert(Schedules.TABLE_NAME, null, values);
     }
 
+    // UPDATED: Now retrieves ID and maps it to ScheduleItem
     public List<ScheduleItem> getUserSchedule(String email) {
         List<ScheduleItem> list = new ArrayList<>();
+        // We select all columns (null), which includes _ID
         Cursor cursor = db.query(Schedules.TABLE_NAME, null,
                 Schedules.COL_EMAIL + "=?", new String[]{email}, null, null, null);
 
         while (cursor.moveToNext()) {
+            // Retrieve the unique ID for the row
+            long id = cursor.getLong(cursor.getColumnIndex(Schedules._ID));
+
             list.add(new ScheduleItem(
+                    id,
                     cursor.getString(cursor.getColumnIndex(Schedules.COL_SUBJECT)),
                     cursor.getString(cursor.getColumnIndex(Schedules.COL_ROOM)),
                     cursor.getString(cursor.getColumnIndex(Schedules.COL_DAY)),
@@ -141,6 +146,15 @@ public class DBManager {
         }
         cursor.close();
         return list;
+    }
+
+    // NEW: Method to update the room for a specific schedule item
+    public boolean updateScheduleRoom(long id, String newRoom) {
+        ContentValues values = new ContentValues();
+        values.put(Schedules.COL_ROOM, newRoom);
+        // Update where _ID equals the provided id
+        int rows = db.update(Schedules.TABLE_NAME, values, Schedules._ID + "=?", new String[]{String.valueOf(id)});
+        return rows > 0;
     }
 
     // --- Location Methods ---
@@ -178,9 +192,12 @@ public class DBManager {
         }
     }
 
+    // UPDATED: Added ID field
     public static class ScheduleItem {
+        public long id;
         public String subject, room, day, time;
-        public ScheduleItem(String s, String r, String d, String t) {
+        public ScheduleItem(long id, String s, String r, String d, String t) {
+            this.id = id;
             subject = s; room = r; day = d; time = t;
         }
     }

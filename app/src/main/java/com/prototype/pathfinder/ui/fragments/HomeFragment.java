@@ -1,5 +1,6 @@
 package com.prototype.pathfinder.ui.fragments;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -70,12 +71,21 @@ public class HomeFragment extends Fragment {
         btnStart.setOnClickListener(view ->
                 startActivity(new Intent(getActivity(), TestInputActivity.class)));
 
+        // --- UPDATED LOGOUT LOGIC WITH CONFIRMATION ---
         btnLogout.setOnClickListener(view -> {
-            prefs.edit().clear().apply();
-            Intent intent = new Intent(getActivity(), LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            requireActivity().finish();
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Log Out")
+                    .setMessage("Are you sure you want to log out?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        // Clear data and exit
+                        prefs.edit().clear().apply();
+                        Intent intent = new Intent(getActivity(), LoginActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        requireActivity().finish();
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                    .show();
         });
 
         return v;
