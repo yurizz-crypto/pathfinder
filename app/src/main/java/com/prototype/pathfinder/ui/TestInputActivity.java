@@ -34,7 +34,7 @@ public class TestInputActivity extends AppCompatActivity {
                 intent.putExtra("logical", scores.get("logical"));
                 startActivity(intent);
             } else {
-                Toast.makeText(this, "Invalid Test ID. Try TEST001-005.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Invalid Test ID. Try TEST001.", Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -84,7 +84,6 @@ public class ScheduleFragment extends Fragment {
                 String rawText = visionText.getText().toUpperCase();
                 boolean found = false;
 
-                // Simple keyword matching for demo purposes
                 if (rawText.contains("MATH") || rawText.contains("STAT")) {
                     dbManager.addSchedule(userEmail, "Mathematics", "CAS Building", "Mon/Wed", "9:00 AM");
                     found = true;
@@ -114,17 +113,11 @@ public class ScheduleFragment extends Fragment {
         }
     }
 
-    /**
-     * Core logic: Fetches raw data, splits multi-day entries, sorts them,
-     * and groups them by Day for the Recycler View.
-     */
     private void refreshList() {
         List<DBManager.ScheduleItem> rawItems = dbManager.getUserSchedule(userEmail);
 
-        // 1. Split "Mon/Wed" items into separate entries for sorting
         List<DisplayItem> displayList = new ArrayList<>();
         for (DBManager.ScheduleItem item : rawItems) {
-            // Split days by slash, comma, or space (e.g. "Mon/Wed" -> "Mon", "Wed")
             String[] days = item.day.split("[/, ]+");
             for (String day : days) {
                 if(day.trim().isEmpty()) continue;
@@ -132,18 +125,13 @@ public class ScheduleFragment extends Fragment {
             }
         }
 
-        // 2. Sort the display list by Day then Time
         Collections.sort(displayList, new ScheduleComparator());
 
-        // 3. Group by Day for the Adapter
         List<DayGroup> groupedList = new ArrayList<>();
         DayGroup currentGroup = null;
 
         for (DisplayItem item : displayList) {
-            // Normalize day string (e.g. "Mon" vs "Monday")
             String dayKey = normalizeDay(item.splitDay);
-
-            // If new group needed
             if (currentGroup == null || !currentGroup.dayName.equals(dayKey)) {
                 currentGroup = new DayGroup(dayKey);
                 groupedList.add(currentGroup);
@@ -151,7 +139,6 @@ public class ScheduleFragment extends Fragment {
             currentGroup.items.add(item.originalItem);
         }
 
-        // 4. Set Adapter
         rvSchedule.setAdapter(new GroupedScheduleAdapter(groupedList));
     }
 
@@ -167,8 +154,7 @@ public class ScheduleFragment extends Fragment {
         return d;
     }
 
-    // --- HELPER CLASSES FOR SORTING ---
-
+    // --- CLASSES ---
     class DisplayItem {
         String splitDay;
         DBManager.ScheduleItem originalItem;
@@ -197,31 +183,22 @@ public class ScheduleFragment extends Fragment {
 
         @Override
         public int compare(DisplayItem o1, DisplayItem o2) {
-            // 1. Compare Days
             String d1 = normalizeDay(o1.splitDay);
             String d2 = normalizeDay(o2.splitDay);
-
             int order1 = dayOrder.containsKey(d1) ? dayOrder.get(d1) : 99;
             int order2 = dayOrder.containsKey(d2) ? dayOrder.get(d2) : 99;
-
             if (order1 != order2) return Integer.compare(order1, order2);
 
-            // 2. Compare Times (if days are equal)
             try {
                 Date t1 = timeFormat.parse(o1.originalItem.time);
                 Date t2 = timeFormat.parse(o2.originalItem.time);
-                if (t1 != null && t2 != null) {
-                    return t1.compareTo(t2);
-                }
-            } catch (ParseException e) {
-                // Ignore parse errors, treat as equal
-            }
+                if (t1 != null && t2 != null) return t1.compareTo(t2);
+            } catch (ParseException e) { }
             return 0;
         }
     }
 
-    // --- RECYCLER ADAPTER ---
-
+    // --- ADAPTER ---
     class GroupedScheduleAdapter extends RecyclerView.Adapter<GroupedScheduleAdapter.ViewHolder> {
         List<DayGroup> groups;
 
@@ -229,7 +206,6 @@ public class ScheduleFragment extends Fragment {
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            // Inflate the Container Card (item_schedule.xml)
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_schedule, parent, false);
             return new ViewHolder(v);
         }
@@ -237,8 +213,6 @@ public class ScheduleFragment extends Fragment {
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             DayGroup group = groups.get(position);
-
-            // Set Day Title (Stacked vertically: M\nO\nN)
             String shortDay = group.dayName.length() >= 3 ? group.dayName.substring(0, 3) : group.dayName;
             StringBuilder vertBuilder = new StringBuilder();
             for(int i=0; i<shortDay.length(); i++) {
@@ -246,39 +220,25 @@ public class ScheduleFragment extends Fragment {
                 if(i < shortDay.length()-1) vertBuilder.append("\n");
             }
             holder.tvDayTitle.setText(vertBuilder.toString());
-
-            // Clear previous items from the container to prevent duplicates
             holder.containerSubjects.removeAllViews();
-
-            // Inflate and add rows for each subject
             LayoutInflater inflater = LayoutInflater.from(holder.itemView.getContext());
 
             for (DBManager.ScheduleItem item : group.items) {
-                // Inflate the Row (item_schedule_row.xml)
                 View row = inflater.inflate(R.layout.item_schedule_row, holder.containerSubjects, false);
+                ((TextView)row.findViewById(R.id.tvTime)).setText(item.time);
+                ((TextView)row.findViewById(R.id.tvSubject)).setText(item.subject);
+                ((TextView)row.findViewById(R.id.tvRoom)).setText(item.room);
 
-                TextView tvTime = row.findViewById(R.id.tvTime);
-                TextView tvSubject = row.findViewById(R.id.tvSubject);
-                TextView tvRoom = row.findViewById(R.id.tvRoom);
-                View btnNavigate = row.findViewById(R.id.btnNavigate);
-
-                tvTime.setText(item.time);
-                tvSubject.setText(item.subject);
-                tvRoom.setText(item.room);
-
-                // Navigate Click
-                btnNavigate.setOnClickListener(v -> {
+                row.findViewById(R.id.btnNavigate).setOnClickListener(v -> {
                     if (getActivity() instanceof DashboardActivity) {
                         ((DashboardActivity) getActivity()).switchToMap(item.room);
                     }
                 });
 
-                // Row Long Click (Edit)
                 row.setOnLongClickListener(v -> {
                     showEditDialog(item);
                     return true;
                 });
-
                 holder.containerSubjects.addView(row);
             }
         }
@@ -289,7 +249,6 @@ public class ScheduleFragment extends Fragment {
         class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvDayTitle;
             LinearLayout containerSubjects;
-
             public ViewHolder(View v) {
                 super(v);
                 tvDayTitle = v.findViewById(R.id.tvDayTitle);
@@ -298,52 +257,94 @@ public class ScheduleFragment extends Fragment {
         }
     }
 
-    // --- EDIT DIALOG ---
-
+    // --- UPDATED EDIT DIALOG ---
     private void showEditDialog(DBManager.ScheduleItem item) {
-        // Inflate custom dialog layout
         View v = LayoutInflater.from(getContext()).inflate(R.layout.dialog_edit_schedule, null);
+
+        // Find Views
         Spinner spinnerRooms = v.findViewById(R.id.spinnerRooms);
+        Spinner spinnerDay = v.findViewById(R.id.spinnerDay);
+        Spinner spinnerTime = v.findViewById(R.id.spinnerTime);
         Button btnSave = v.findViewById(R.id.btnSave);
         TextView btnCancel = v.findViewById(R.id.btnCancel);
         TextView tvTitle = v.findViewById(R.id.tvDialogTitle);
 
         tvTitle.setText("Edit " + item.subject);
 
-        // Setup Spinner
+        // 1. Setup ROOMS Spinner
         List<String> rooms = dbManager.getAllRoomNames();
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, rooms);
-        spinnerRooms.setAdapter(adapter);
-        int position = adapter.getPosition(item.room);
-        if (position >= 0) spinnerRooms.setSelection(position);
+        setupSpinner(spinnerRooms, rooms, item.room);
 
-        // Build Dialog
+        // 2. Setup DAYS Spinner
+        List<String> days = new ArrayList<>();
+        days.add("Mon"); days.add("Tue"); days.add("Wed"); days.add("Thu"); days.add("Fri"); days.add("Sat"); days.add("Sun");
+        days.add("Mon/Wed"); days.add("Tue/Thu"); // Common combos
+        // Try to match current day slightly loosely
+        setupSpinner(spinnerDay, days, item.day);
+
+        // 3. Setup TIMES Spinner
+        List<String> times = new ArrayList<>();
+        times.add("7:00 AM"); times.add("7:30 AM"); times.add("8:00 AM"); times.add("8:30 AM");
+        times.add("9:00 AM"); times.add("9:30 AM"); times.add("10:00 AM"); times.add("10:30 AM");
+        times.add("11:00 AM"); times.add("11:30 AM"); times.add("12:00 PM"); times.add("12:30 PM");
+        times.add("1:00 PM"); times.add("1:30 PM"); times.add("2:00 PM"); times.add("2:30 PM");
+        times.add("3:00 PM"); times.add("3:30 PM"); times.add("4:00 PM"); times.add("4:30 PM");
+        times.add("5:00 PM"); times.add("5:30 PM"); times.add("6:00 PM");
+        setupSpinner(spinnerTime, times, item.time);
+
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setView(v);
         AlertDialog dialog = builder.create();
 
-        // Transparent background for rounded corners
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
 
-        // Save Action
+        // SAVE ACTION
         btnSave.setOnClickListener(view -> {
             String newRoom = spinnerRooms.getSelectedItem().toString();
-            boolean success = dbManager.updateScheduleRoom(item.id, newRoom);
+            String newDay = spinnerDay.getSelectedItem().toString();
+            String newTime = spinnerTime.getSelectedItem().toString();
+
+            // Call updated DB Method
+            boolean success = dbManager.updateScheduleDetails(item.id, newRoom, newDay, newTime);
 
             if (success) {
-                Toast.makeText(getContext(), "Room updated to " + newRoom, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Schedule Updated!", Toast.LENGTH_SHORT).show();
                 refreshList();
                 dialog.dismiss();
             } else {
-                Toast.makeText(getContext(), "Failed to update room.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Update failed.", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Cancel Action
         btnCancel.setOnClickListener(view -> dialog.dismiss());
-
         dialog.show();
+    }
+
+    // Helper to set adapter and selection safely
+    private void setupSpinner(Spinner spinner, List<String> items, String currentVal) {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_dropdown_item, items);
+        spinner.setAdapter(adapter);
+
+        // Find position of current value
+        int pos = -1;
+        for(int i=0; i<items.size(); i++) {
+            if(items.get(i).equalsIgnoreCase(currentVal)) {
+                pos = i;
+                break;
+            }
+        }
+        // If exact match not found (e.g. OCR gave "9:00AM" but list has "9:00 AM"), try simplified check
+        if (pos == -1 && currentVal != null) {
+            for(int i=0; i<items.size(); i++) {
+                if(items.get(i).replace(" ","").equalsIgnoreCase(currentVal.replace(" ",""))) {
+                    pos = i;
+                    break;
+                }
+            }
+        }
+
+        if (pos >= 0) spinner.setSelection(pos);
     }
 }

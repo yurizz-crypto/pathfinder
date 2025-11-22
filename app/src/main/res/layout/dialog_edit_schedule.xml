@@ -8,78 +8,110 @@
     app:cardElevation="8dp"
     app:cardBackgroundColor="@color/white">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
-
-        <TextView
-            android:id="@+id/tvDialogTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Edit Location"
-            android:textSize="22sp"
-            android:fontFamily="@font/poppins"
-            android:textStyle="bold"
-            android:textColor="@color/brand_primary"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select the correct building or room for this subject."
-            android:textSize="14sp"
-            android:fontFamily="@font/poppins"
-            android:textColor="@color/gray_3"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="20dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Room / Building"
-            android:textSize="12sp"
-            android:textColor="@color/brand_primary"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp"/>
-
-        <Spinner
-            android:id="@+id/spinnerRooms"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@drawable/rounded_badge"
-            android:backgroundTint="#F5F5F5"
-            android:paddingStart="12dp"/>
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="24dp"
-            android:gravity="end">
+            android:orientation="vertical"
+            android:padding="24dp">
 
             <TextView
-                android:id="@+id/btnCancel"
+                android:id="@+id/tvDialogTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Cancel"
-                android:textSize="16sp"
+                android:text="Edit Details"
+                android:textSize="22sp"
                 android:fontFamily="@font/poppins"
                 android:textStyle="bold"
-                android:textColor="@color/gray_3"
-                android:padding="12dp"
-                android:layout_marginEnd="8dp"/>
+                android:textColor="@color/brand_primary"
+                android:layout_marginBottom="16dp"/>
 
-            <Button
-                android:id="@+id/btnSave"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Update"
-                android:fontFamily="@font/poppins"
-                android:backgroundTint="@color/brand_primary"
-                android:textColor="@color/white"
-                app:cornerRadius="8dp"/>
-        </LinearLayout>
+                android:text="Day of Week"
+                android:textSize="12sp"
+                android:textColor="@color/brand_primary"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
 
-    </LinearLayout>
+            <Spinner
+                android:id="@+id/spinnerDay"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:background="@drawable/rounded_badge"
+                android:backgroundTint="#F5F5F5"
+                android:paddingStart="12dp"
+                android:layout_marginBottom="12dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Time Slot"
+                android:textSize="12sp"
+                android:textColor="@color/brand_primary"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerTime"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:background="@drawable/rounded_badge"
+                android:backgroundTint="#F5F5F5"
+                android:paddingStart="12dp"
+                android:layout_marginBottom="12dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Room / Building"
+                android:textSize="12sp"
+                android:textColor="@color/brand_primary"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerRooms"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:background="@drawable/rounded_badge"
+                android:backgroundTint="#F5F5F5"
+                android:paddingStart="12dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="24dp"
+                android:gravity="end">
+
+                <TextView
+                    android:id="@+id/btnCancel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cancel"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/poppins"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_3"
+                    android:padding="12dp"
+                    android:layout_marginEnd="8dp"/>
+
+                <Button
+                    android:id="@+id/btnSave"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Update"
+                    android:fontFamily="@font/poppins"
+                    android:backgroundTint="@color/brand_primary"
+                    android:textColor="@color/white"
+                    app:cornerRadius="8dp"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
 </com.google.android.material.card.MaterialCardView>

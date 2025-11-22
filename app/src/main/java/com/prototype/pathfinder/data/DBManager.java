@@ -148,10 +148,13 @@ public class DBManager {
         return list;
     }
 
-    // NEW: Method to update the room for a specific schedule item
-    public boolean updateScheduleRoom(long id, String newRoom) {
+    // NEW: Method to update room, day, and time
+    public boolean updateScheduleDetails(long id, String newRoom, String newDay, String newTime) {
         ContentValues values = new ContentValues();
         values.put(Schedules.COL_ROOM, newRoom);
+        values.put(Schedules.COL_DAY, newDay);
+        values.put(Schedules.COL_TIME, newTime);
+
         // Update where _ID equals the provided id
         int rows = db.update(Schedules.TABLE_NAME, values, Schedules._ID + "=?", new String[]{String.valueOf(id)});
         return rows > 0;
