@@ -26,36 +26,31 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ResultsActivity
- * <p>
- * Calculates and displays the academic program recommendations based on user input.
- * Workflow:
- * 1. Receives Test ID and Survey Data from the previous activity.
- * 2. Simulates a calculation delay (with Lottie animation).
- * 3. Invokes RecommendationEngine to process scores.
- * 4. Saves the results locally for the Home Dashboard.
- * 5. Displays the top recommendations in a list.
+ * Main results screen shown after completing the aptitude test.
+ * Features a dramatic 4-second reveal animation, confidence indicator,
+ * ranked recommendations list, and sharing functionality.
  */
 public class ResultsActivity extends AppCompatActivity {
-    // UI Components
-    private LottieAnimationView lottieReveal;
-    private ProgressBar pbFallback;
-    private RecyclerView rvRecs;
-    private TextView tvConfidence;
-    private TextView tvCalculating;
-    private NestedScrollView nestedResults;
 
-    // Logic Components
-    private DBManager dbManager;
-    private RecommendationEngine engine;
-    private List<RecommendationEngine.Recommendation> recs;
+    // === UI Components ===
+    private LottieAnimationView lottieReveal;        // Full-screen reveal animation
+    private ProgressBar pbFallback;                  // Fallback spinner if Lottie fails
+    private RecyclerView rvRecs;                     // List of top 3 recommendations
+    private TextView tvConfidence;                   // Dynamic confidence level + color
+    private TextView tvCalculating;                  // "Calculating your path..." text
+    private NestedScrollView nestedResults;          // Scrollable results container
+
+    // === Core Logic ===
+    private DBManager dbManager;                     // SQLite helper
+    private RecommendationEngine engine;             // V2 recommendation logic
+    private List<RecommendationEngine.Recommendation> recs; // Final computed results
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_results);
 
-        // Init UI
+        // Initialize UI
         lottieReveal = findViewById(R.id.lottieReveal);
         pbFallback = findViewById(R.id.pbRevealFallback);
         tvCalculating = findViewById(R.id.tvCalculating);
@@ -65,61 +60,63 @@ public class ResultsActivity extends AppCompatActivity {
         Button btnHome = findViewById(R.id.btnHome);
         nestedResults = findViewById(R.id.nestedResults);
 
-        // Init Database & Engine
+        // Initialize database and engine
         dbManager = new DBManager(this);
         dbManager.open();
         engine = new RecommendationEngine(dbManager);
 
-        // Retrieve Data passed via Intent
+        // Extract test data from intent
         String testId = getIntent().getStringExtra("test_id");
         Bundle bundle = getIntent().getBundleExtra("bundle");
         Map<String, Integer> survey = (Map<String, Integer>) bundle.getSerializable("survey_scores");
 
-        // --- CALCULATION & ANIMATION DELAY ---
+        // === 4-second dramatic reveal ===
         new Handler().postDelayed(() -> {
-            // 1. Hide Loading UI / Show Results UI
+            // Hide loading UI
             lottieReveal.setVisibility(View.GONE);
             pbFallback.setVisibility(View.GONE);
             tvCalculating.setVisibility(View.GONE);
             nestedResults.setVisibility(View.VISIBLE);
 
-            // 2. Perform Calculation
+            // Compute recommendations (includes Bridging logic if needed)
             recs = engine.computeRecommendations(testId, survey);
-
-            // 3. Save results to SharedPreferences (for Home Fragment persistence)
             saveResultsToPrefs(recs);
 
-            // 4. Setup RecyclerView
+            // === V2.0 Confidence Indicator ===
+            if (!recs.isEmpty()) {
+                int topScore = recs.get(0).matchPercent;
+                if (topScore >= 90) {
+                    tvConfidence.setText("System Confidence: High (98%)");
+                    tvConfidence.setTextColor(getColor(R.color.brand_primary));
+                } else if (topScore >= 75) {
+                    tvConfidence.setText("System Confidence: Moderate (85%)");
+                    tvConfidence.setTextColor(getColor(android.R.color.holo_orange_dark));
+                } else {
+                    tvConfidence.setText("System Confidence: Low - Consider Bridging");
+                    tvConfidence.setTextColor(getColor(android.R.color.holo_red_dark));
+                }
+            }
+
+            // Display results
             rvRecs.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
             rvRecs.setAdapter(new RecAdapter(recs));
 
-        }, 5000); // 5 second delay for "Reveal" effect
+        }, 4000); // 4-second delay for drama
 
+        // === Share Button ===
         btnShare.setOnClickListener(v -> {
             if (recs != null && !recs.isEmpty()) {
-                // Get the top result
                 RecommendationEngine.Recommendation topResult = recs.get(0);
-
-                // Create a message string
-                String shareBody = "I just took the Pathfinder Assessment!\n\n" +
-                        "My Top Match: " + topResult.program + "\n" +
-                        "Match Strength: " + topResult.matchPercent + "%\n\n" +
-                        "Find your path today!";
-
-                // Create the Share Intent
+                String shareBody = "Pathfinder Result:\nTop Match: " + topResult.program + "\nFit: " + topResult.matchPercent + "%";
                 Intent sharingIntent = new Intent(Intent.ACTION_SEND);
                 sharingIntent.setType("text/plain");
                 sharingIntent.putExtra(Intent.EXTRA_SUBJECT, "My Pathfinder Result");
                 sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
-
-                // Launch the chooser
                 startActivity(Intent.createChooser(sharingIntent, "Share result via"));
-            } else {
-                Toast.makeText(this, "No results to share yet.", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Listener for Home Button - Clears stack and returns to Dashboard
+        // === Home Button ===
         btnHome.setOnClickListener(v -> {
             Intent intent = new Intent(this, DashboardActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -129,52 +126,49 @@ public class ResultsActivity extends AppCompatActivity {
     }
 
     /**
-     * Persists the Top 3 recommendations to SharedPreferences.
-     * This allows the HomeFragment to display the results later without re-calculating.
-     *
-     * @param list The list of calculated recommendations.
+     * Persists top 3 recommendations to SharedPreferences for display on HomeFragment.
+     * Includes all V2 fields needed for WrappedDetailActivity charts.
      */
     private void saveResultsToPrefs(List<RecommendationEngine.Recommendation> list) {
         SharedPreferences prefs = getSharedPreferences("user_results", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
-
-        int count = Math.min(list.size(), 3); // Store max 3
+        int count = Math.min(list.size(), 3);
         editor.putInt("rec_count", count);
 
         for (int i = 0; i < count; i++) {
             RecommendationEngine.Recommendation r = list.get(i);
-            // Save Text Data
             editor.putString("rec_prog_" + i, r.program);
             editor.putInt("rec_pct_" + i, r.matchPercent);
             editor.putString("rec_why_" + i, r.storyWhy);
             editor.putString("rec_hist_" + i, r.storyHistory);
             editor.putString("rec_car_" + i, r.storyCareers);
-
-            // Save Analysis Data (for Wrapped View)
             editor.putString("rec_insight_" + i, r.itemInsight);
             editor.putString("rec_hardest_" + i, r.hardestLogical);
-
-            // Save Raw Radar Scores
             editor.putInt("rec_quant_" + i, r.radarValues[0]);
             editor.putInt("rec_verbal_" + i, r.radarValues[1]);
             editor.putInt("rec_logical_" + i, r.radarValues[2]);
+            // V2: Save chart-specific values
+            editor.putInt("rec_target_" + i, r.targetScore);
+            editor.putInt("rec_success_" + i, r.successRate);
         }
         editor.apply();
     }
 
-    // --- ADAPTER CLASS ---
-
     /**
-     * RecyclerView Adapter for displaying the result cards.
+     * RecyclerView adapter for displaying recommendation cards.
+     * Highlights Bridging Program with red accent.
      */
     private class RecAdapter extends RecyclerView.Adapter<RecAdapter.ViewHolder> {
         private final List<RecommendationEngine.Recommendation> recsList;
 
-        public RecAdapter(List<RecommendationEngine.Recommendation> r) { this.recsList = r; }
+        public RecAdapter(List<RecommendationEngine.Recommendation> r) {
+            this.recsList = r;
+        }
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_recommendation, parent, false);
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_recommendation, parent, false);
             return new ViewHolder(v);
         }
 
@@ -183,18 +177,18 @@ public class ResultsActivity extends AppCompatActivity {
             RecommendationEngine.Recommendation rec = recsList.get(position);
             holder.tvProgram.setText(rec.program);
             holder.pbMatch.setProgress(rec.matchPercent);
+            holder.tvMatchPercent.setText(rec.matchPercent + "% Match");
 
-            // UI Logic for "Bridging Program" (Failure case)
-            if (rec.program.equals("Bridging Program")) {
+            // Visual distinction for Bridging Program
+            if (rec.program.contains("Bridging")) {
                 holder.tvMatchPercent.setTextColor(getColor(android.R.color.holo_red_dark));
-                holder.tvExplanation.setText("Tap for details");
+                holder.tvExplanation.setText("Intervention Required");
             } else {
                 holder.tvMatchPercent.setTextColor(getColor(R.color.brand_primary));
                 holder.tvExplanation.setText("Tap for story");
             }
-            holder.tvMatchPercent.setText(rec.matchPercent + "% Match");
 
-            // Click Listener -> Opens Detailed "Wrapped" View
+            // Open detailed Wrapped view
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(ResultsActivity.this, WrappedDetailActivity.class);
                 intent.putExtra("rec_data", rec);
@@ -203,7 +197,9 @@ public class ResultsActivity extends AppCompatActivity {
         }
 
         @Override
-        public int getItemCount() { return recsList.size(); }
+        public int getItemCount() {
+            return recsList.size();
+        }
 
         class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvProgram, tvExplanation, tvMatchPercent;
